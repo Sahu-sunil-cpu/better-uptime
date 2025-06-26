@@ -6,9 +6,10 @@ pub struct Config {
 
 impl Default for  Config {
  fn default() -> Self {
-  dotenv().ok();
+ println!("{}", dotenv().unwrap().display());
     let db_url = env::var("DATABASE_URL").
-    unwrap_or_else(|_|panic!("provide the environment db url"));
+    unwrap_or_else(|_|panic!( "provide environment db-url" ));
+    
 
     Self {
         db_url

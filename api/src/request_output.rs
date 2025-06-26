@@ -18,3 +18,8 @@ pub struct  CreateUserInput {
 pub struct  CreateUserOutput {
    pub res: String,
 }
+
+#[derive(Serialize, Deserialize)]
+pub struct GetWebsiteOutput {
+    pub url: String,
+}

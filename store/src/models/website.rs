@@ -21,7 +21,7 @@ impl Store {
     ) -> Result<Website, diesel::result::Error> {
         let id = Uuid::new_v4();
 
-        let Website = Website {
+        let website = Website {
             id: id.to_string(),
             url: url,
             timeAdded: Utc::now().naive_utc(),
@@ -29,7 +29,7 @@ impl Store {
         };
 
         let website = diesel::insert_into(website::table)
-            .values(&Website)
+            .values(&website)
             .returning(Website::as_returning())
             .get_result(&mut self.conn)?;
 
@@ -38,7 +38,6 @@ impl Store {
     pub fn get_website(
         &mut self,
         user_id: String,
-        _url: String,
     ) -> Result<Website, diesel::result::Error> {
         use crate::schema::website::dsl::*;
 
