@@ -1,5 +1,10 @@
-use crate::{ schema::user, store::Store };
+use core::panic;
+use std::collections::HashMap;
+
+use crate::{schema::user, store::Store};
 use diesel::prelude::*;
+use jsonwebtoken::{EncodingKey, Header, encode, errors::Error};
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 #[derive(Queryable, Selectable, Insertable)]
@@ -37,7 +42,7 @@ impl Store {
         &mut self,
         input_password: String,
         input_username: String,
-    ) -> Result<bool, diesel::result::Error> {
+    ) -> Result<String, diesel::result::Error> {
         use crate::schema::user::dsl::*;
 
         let result = user
@@ -45,12 +50,65 @@ impl Store {
             .select(User::as_select())
             .first(&mut self.conn)?;
 
+        // password hashing checks
 
-            // password hashing checks
-        if result.password != input_password {
-            return Ok(false)
-        }
+        let _jw_t = match jwt(result.id) {
+            Ok(s) => {
+                if result.password == input_password {
+                    return Ok(s);
+                }
+                 print!("yes");
+                return Err(diesel::result::Error::NotFound);
+            }
 
-        Ok(true)
+            Err(e) => {
+                                 print!("yes");
+
+                println!("{:?}", e);
+
+                panic!() // need to have ac ustom error for this, panic is bad
+            }
+        };
     }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct Claims {
+    sub: String,
+    exp: usize,
+}
+
+pub fn jwt(user_id: String) -> Result<String, jsonwebtoken::errors::ErrorKind> {
+    let my_claims = Claims {
+        sub: user_id,
+        exp: 1111111111111111,
+    };
+
+    let key = b"secret";
+
+    // let mut extras = HashMap::with_capacity(1);
+    // extras.insert("custom".to_string(), "header".to_string());
+
+    //   let header = Header {
+    //     kid: Some("signing_key".to_owned()),
+    //     alg: Algorithm::HS512,
+    //     extras,
+    //     ..Default::default()
+    // };
+
+    let _token = match encode(
+        &Header::default(),
+        &my_claims,
+        &EncodingKey::from_secret(key),
+    ) {
+        Ok(t) => {
+            println!("{:?}", t);
+
+            return Ok(t);
+        }
+        Err(e) => {
+            println!("{:?}", e);
+            return Err(Error::into_kind(e));
+        } // in practice you would return the error
+    };
 }
